@@ -117,6 +117,74 @@ def combine_dataset(path1, path2, path3, output_path):
         f.writelines(f1.readlines())
     f.close()
 
+class TripleProcessor:
+    def __init__(self, data_path):
+        self.data_path = data_path
+        self.__load_data_path()
+        self.convert_conv(self.data_convs[0], 0)
+
+    def __load_data_path(self):
+        data_json = []
+        with open(self.data_path,'r') as f:
+            for idx,line in enumerate(f):
+                data_json.append( json.loads(line))
+        self.data_convs = data_json
+
+    def convert_conv(self, conv, conv_id):
+        text = conv['text']
+        utterances = text.split('\n')
+        utterances = [{'text':x, 'span_text': [], 'relations':[], 'spans':[], 'conv_id':conv_id} for x in utterances]
+        
+        start = 0
+        text_utt_map = {}
+        for idx in range(len(utterances)):
+            utterances[idx]['span_text'] = (start,start+len(utterances[idx]['text']))
+            start += len(utterances[idx]['text'])
+
+        relations = conv['relations']
+        
+        utt_id = 0
+        for idx in range(len(relations)):
+            conv_start, conv_end = utterances[utt_id]['span_text']
+            sub_span = relations[idx]['head_span']
+            while not (conv_start < sub_span['start'] and sub_span['start'] < conv_end):
+                utt_id +=1
+                conv_start, conv_end = utterances[utt_id]['span_text']
+
+            obj_span = relations[idx]['child_span']
+            
+            adj_rel = TripleProcessor.__create_relation__(text, utterances[utt_id], sub_span, obj_span, relations[idx]['label'])
+            utterances[utt_id]['relations'].append(adj_rel)
+            utterances[utt_id]['spans'].append(adj_rel['head_span'])
+            utterances[utt_id]['spans'].append(adj_rel['child_span'])
+
+        for x in utterances:
+            del x['span_text']
+        """with open('entity_linking_sample2.jsonl','w') as f:
+            for x in utterances:
+                f.write(json.dumps(x)+'\n')"""
+        return utterances
+        
+
+    def __create_entity_mention__(text, utt, rel_span):
+        word_s, word_e = TripleProcessor.__find_new_idx__(text, utt, rel_span)
+        return {'text': utt['text'][word_s:word_e], 'start':word_s ,'end':word_e,'label':"ENTITY" }
+    
+    def __create_relation__(text, utt, sub, obj, rel_text):
+        relation = {
+                    'head_span': TripleProcessor.__create_entity_mention__(text,utt,sub),
+                    'child_span' : TripleProcessor.__create_entity_mention__(text,utt,obj),
+                    'label':rel_text
+        }
+        return relation
+
+    #calculates the new indices og entity mentions for the utterances
+    def __find_new_idx__(text, utt, rel_span):
+        word = text[rel_span['start']:rel_span['end']]
+        utt_word_s = utt['text'].find(word)
+        utt_word_e = utt_word_s + len(word)
+        return utt_word_s, utt_word_e
+
 
 
 
@@ -128,6 +196,7 @@ if __name__=="__main__":
     """p = 'convs' 
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
-    remove_duplicate('convs/convaa.jsonl', 'annotations_data/triple1.jsonl')
+    c = TripleProcessor('entity_linking_sample.jsonl')
+    #remove_duplicate('convs/convaa.jsonl', 'annotations_data/triple1.jsonl')
     #c = DatasetSplitter("convs/conv.jsonl","annotations_data/triple1.jsonl", 20)
     #c.split_data(200)
