@@ -26,6 +26,7 @@ class Conversation:
 			conversation = conversation + "Agent 1: {}\n Agent 2: {}\n" \
 			       .format(self.agent1_utterances[i], \
                    self.agent2_utterances[i])
+
 		o = {'text': conversation}
 		return json.dumps(o)
 
@@ -57,6 +58,6 @@ class ConversationProcessor:
 
 
 if __name__=="__main__":
-	
+	p = '/home/abiram/github/PKGAnnotationSystem/data'
 	c = ConversationProcessor(p)
 	c.write_convs_to_jsonl("{}/conv.jsonl".format(p))
