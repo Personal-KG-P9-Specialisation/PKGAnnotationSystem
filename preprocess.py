@@ -26,6 +26,7 @@ class Conversation:
             conversation = conversation + "Agent 1: {}\n Agent 2: {}\n" \
                    .format(self.agent1_utterances[i], \
                    self.agent2_utterances[i])
+
         o = {'text': conversation[:-1]}
         return json.dumps(o)
 
