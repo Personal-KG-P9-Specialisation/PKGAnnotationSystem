@@ -1,4 +1,4 @@
-import os, json
+import os, json, difflib, copy
 
 #Class for representing a conversation
 class Conversation:
@@ -29,7 +29,7 @@ class Conversation:
 
         o = {'text': conversation[:-1]}
         return json.dumps(o)
-
+#Process the personachat .txt files processed by ... into conversations usable by the triple annotations system
 class ConversationProcessor:
     def __init__(self, path:str):
         self.conv_files = ConversationProcessor.order_conv_files(path)
@@ -53,6 +53,7 @@ class ConversationProcessor:
             f.write('\n')
         f.close()
 
+#Split the dataset into n lines long files
 class DatasetSplitter:
     def __init__(self, src_path, loaded_data_path, n_chars):
         self.path = src_path
@@ -87,6 +88,7 @@ class DatasetSplitter:
         w.close()
 
 
+#Removes duplicate conversations from the path file from the path_anno files (annotated conversations in the DB)
 def remove_duplicate(path, path_anno):
     dup_lst = list()
     w = open(path+'.bak','w')
@@ -117,11 +119,65 @@ def combine_dataset(path1, path2, path3, output_path):
         f.writelines(f1.readlines())
     f.close()
 
+#Creates candidates for subject/object mentions outputted for one conversation.
+# Is used in TriplePorcessor
+class CandidateGenerator:
+    def __init__(self,conceptnet_path='',entities=[]):
+        self.entities = entities
+        if self.entities == []:
+            self.entities = self.load_ConceptNet()
+
+
+    #taken from our PKGAnalysis repository
+    # Assumes conceptnet 5.5 / 5.7 source file in conceptnet folder
+    def load_ConceptNet(self):
+        # The graph is available at: https://github.com/commonsense/conceptnet5/wiki/Downloads
+        # It will be downloaded as .csv but is tab-seperated
+        df = pd.read_csv(self.conceptnet_path,sep='\t', error_bad_lines=False)
+        node1s = set(df.iloc[:,2])
+        node2s = set(df.iloc[:,3])
+        nodes = list(node1s)
+        nodes.extend(list(node2s))
+        return list(set(nodes))
+
+    #taken from our PKGAnalysis repository
+    def entity_candidates(self, em, n=5):
+        el_list = list()
+        for e in self.entities:
+            if em in str(e):
+                el_list.append(e)
+        el_list = difflib.get_close_matches(em,el_list, n=n)
+        return [{'id':x} for x in el_list]
+    
+    #creates candidates for input conversation
+    def candidatesFor(self,conv):
+        lst_of_utt = []
+        for i in range(len(conv['utterances'])):
+            utts = self.create_candidate(conv['utterances'][i])
+            lst_of_utt.extend(utts)
+        return lst_of_utt
+
+     
+    def create_candidate(self, utt):
+        phrases = utt['spans']
+        lst_of_utt = []
+        for i in range(len(phrases)):
+            utt_copy = copy.deepcopy(utt)
+            utt_copy['spans'] = [ phrases[i] ]
+            utt_copy['options'] = self.entity_candidates(phrases[i]['text'])
+            lst_of_utt.append(utt_copy)
+        return lst_of_utt
+
+
+
+
+#Processes the annotated data and makes it available for the other tasks.
 class TripleProcessor:
     def __init__(self, data_path):
+        self.data_convs = []
         self.data_path = data_path
         self.__load_data_path()
-        self.convert_conv(self.data_convs[0], 0)
+        self.convert_all_convs()
 
     def __load_data_path(self):
         data_json = []
@@ -130,10 +186,16 @@ class TripleProcessor:
                 data_json.append( json.loads(line))
         self.data_convs = data_json
 
-    def convert_conv(self, conv, conv_id):
+    def convert_all_convs(self):
+        convs = []
+        for x in self.data_convs:
+            convs.append(self.convert_conv(x))
+        self.data_convs = convs
+
+    def convert_conv(self, conv):
         text = conv['text']
         utterances = text.split('\n')
-        utterances = [{'text':x, 'span_text': [], 'relations':[], 'spans':[], 'conv_id':conv_id} for x in utterances]
+        utterances = [{'text':x, 'span_text': [], 'relations':[], 'spans':[],'turn': None, 'conv_id':conv['conv_id']} for x in utterances]
         
         start = 0
         text_utt_map = {}
@@ -146,7 +208,11 @@ class TripleProcessor:
         utt_id = 0
         for idx in range(len(relations)):
             conv_start, conv_end = utterances[utt_id]['span_text']
+
+            #subject span of relation
             sub_span = relations[idx]['head_span']
+            
+            #iterates the utterance to match the current subject span. We assume that subject and object in the same utterance.
             while not (conv_start < sub_span['start'] and sub_span['start'] < conv_end):
                 utt_id +=1
                 conv_start, conv_end = utterances[utt_id]['span_text']
@@ -158,12 +224,14 @@ class TripleProcessor:
             utterances[utt_id]['spans'].append(adj_rel['head_span'])
             utterances[utt_id]['spans'].append(adj_rel['child_span'])
 
-        for x in utterances:
+
+        for idx, x in enumerate(utterances):
             del x['span_text']
+            x['turn'] = idx
         """with open('entity_linking_sample2.jsonl','w') as f:
             for x in utterances:
                 f.write(json.dumps(x)+'\n')"""
-        return utterances
+        return {'utterances' : utterances, 'conv_id': conv['conv_id']}
         
 
     def __create_entity_mention__(text, utt, rel_span):
@@ -178,6 +246,20 @@ class TripleProcessor:
         }
         return relation
 
+    def write_data(self, path):
+        f = open(path,'w')
+        for x in self.data_convs:
+            f.write(json.dumps(x)+'\n')
+    
+    def export_el_annotation_data(self, conceptnet_path, out_pointer):
+        cg = CandidateGenerator(conceptnet_path=conceptnet_path)
+        counter = 0
+        for conv in self.data_convs:
+            utts = cg.candidatesFor(conv)
+            for u in utts:
+                counter += 1
+                out_pointer.write(json.dumps(u)+'\n')
+        print("Utterances Writtes:\t{}\n".format(counter))
     #calculates the new indices og entity mentions for the utterances
     def __find_new_idx__(text, utt, rel_span):
         word = text[rel_span['start']:rel_span['end']]
@@ -186,9 +268,20 @@ class TripleProcessor:
         return utt_word_s, utt_word_e
 
 
+#Creates ids for convasations in input data to triple annotations interface
+def create_ids(path, conv_id=0):
+    f = open(path+'.bak','w')
+    ff = open(path,'r')
+    for idx, line in enumerate(ff):
+        conv = json.loads(line)
+        conv['conv_id'] = conv_id
+        f.write(json.dumps(conv)+'\n')
+        conv_id += 1
 
 
 if __name__=="__main__":
+    #ready for next string
+    #create_ids('convs/convab.jsonl', 400)
     pass
     """for valid
     d= 'personachat/personachat_'
@@ -196,7 +289,10 @@ if __name__=="__main__":
     """p = 'convs' 
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
+
     c = TripleProcessor('entity_linking_sample.jsonl')
+    #c.write_data('el_sample3.jsonl')
+
     #remove_duplicate('convs/convaa.jsonl', 'annotations_data/triple1.jsonl')
     #c = DatasetSplitter("convs/conv.jsonl","annotations_data/triple1.jsonl", 20)
     #c.split_data(200)
