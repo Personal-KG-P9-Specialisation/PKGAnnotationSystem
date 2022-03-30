@@ -5,7 +5,7 @@ patterns = os.getenv('agentJsonl')#agent_patterns.jsonl
 dis_pattern = os.getenv('dis_pattern') #dis_pattern.jsonl
 
 if __name__ == "__main__":
-    relations = ['At_location', 'Desires', 'HasA','HasProperty','IsA','PartOf','MotivatedByGoal','Aversion_preference','has_name','has_age','has_gender', 'job_status', 'school_status','do']
+    relations = ['HasNot','At_location', 'Desires', 'HasA','HasProperty','IsA','PartOf','MotivatedByGoal','Aversion_preference','has_name','has_age','has_gender', 'job_status', 'school_status','do']
     rel_text = ''
     for x in relations:
         rel_text += ',' + x
