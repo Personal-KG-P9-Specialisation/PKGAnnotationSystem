@@ -93,14 +93,14 @@ def remove_duplicate(path, path_anno):
     with open(path_anno,'r') as f:
         for idx,line in enumerate(f):
             conv = json.loads(line)
-            dup_lst.append(conv['text'][:20])
+            dup_lst.append(conv['text'])
     path_f = open(path,'r')
     for idx,line in enumerate(path_f):
         c = json.loads(line)
-        if c['text'][:20] in dup_lst:
+        if c['text'] in dup_lst:
             print("Duplicate on lines {}".format(idx))
             continue
-        w.write(line+'\n')
+        w.write(json.dumps(c)+'\n')
     path_f.close()
     w.close()
 
@@ -130,7 +130,7 @@ def create_ids(path, conv_id=0):
 
 if __name__=="__main__":
     #ready for next string
-    create_ids('convs/convab.jsonl', 400)
+    #create_ids('convs/convab.jsonl', 400)
     pass
     """for valid
     d= 'personachat/personachat_'
@@ -138,6 +138,6 @@ if __name__=="__main__":
     """p = 'convs' 
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
-    #remove_duplicate('convs/convaa.jsonl', 'annotations_data/triple1.jsonl')
+    remove_duplicate('convs/convab.jsonl', 'annotations_data/triple1.jsonl')
     #c = DatasetSplitter("convs/conv.jsonl","annotations_data/triple1.jsonl", 20)
     #c.split_data(200)
