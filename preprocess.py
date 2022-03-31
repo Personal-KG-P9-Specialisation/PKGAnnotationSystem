@@ -217,7 +217,7 @@ class TripleProcessor:
             sub_span = relations[idx]['head_span']
             
             #iterates the utterance to match the current subject span. We assume that subject and object in the same utterance.
-            while not (conv_start <= sub_span['start'] and sub_span['start'] < conv_end):
+            while not (conv_start <= sub_span['start'] and sub_span['start'] <= conv_end):
                 utt_id +=1
                 #print(conv['conv_id'])
                 #print(utterances[utt_id]['span_text'], sub_span['start'],sub_span['end'], text[sub_span['start']:sub_span['end']])
