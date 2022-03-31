@@ -1,4 +1,6 @@
 import os, json, difflib, copy
+import pandas as pd
+import time
 
 #Class for representing a conversation
 class Conversation:
@@ -120,9 +122,10 @@ def combine_dataset(path1, path2, path3, output_path):
     f.close()
 
 #Creates candidates for subject/object mentions outputted for one conversation.
-# Is used in TriplePorcessor
+# Is used in TripleProcessor
 class CandidateGenerator:
     def __init__(self,conceptnet_path='',entities=[]):
+        self.conceptnet_path = conceptnet_path
         self.entities = entities
         if self.entities == []:
             self.entities = self.load_ConceptNet()
@@ -141,12 +144,12 @@ class CandidateGenerator:
         return list(set(nodes))
 
     #taken from our PKGAnalysis repository
-    def entity_candidates(self, em, n=5):
+    def entity_candidates(self, em, n=5, cutoff = 0.3):
         el_list = list()
         for e in self.entities:
             if em in str(e):
                 el_list.append(e)
-        el_list = difflib.get_close_matches(em,el_list, n=n)
+        el_list = difflib.get_close_matches(em,el_list, n=n, cutoff=cutoff)
         return [{'id':x} for x in el_list]
     
     #creates candidates for input conversation
@@ -164,6 +167,7 @@ class CandidateGenerator:
         for i in range(len(phrases)):
             utt_copy = copy.deepcopy(utt)
             utt_copy['spans'] = [ phrases[i] ]
+            #del utt_copy['relations'] #new addition
             utt_copy['options'] = self.entity_candidates(phrases[i]['text'])
             lst_of_utt.append(utt_copy)
         return lst_of_utt
@@ -171,7 +175,7 @@ class CandidateGenerator:
 
 
 
-#Processes the annotated data and makes it available for the other tasks.
+#Processes the triple annotated data and makes it available for the other tasks.
 class TripleProcessor:
     def __init__(self, data_path):
         self.data_convs = []
@@ -204,7 +208,7 @@ class TripleProcessor:
             start += len(utterances[idx]['text'])
 
         relations = conv['relations']
-        
+        relations.sort(key=lambda x: x['head_span']['start']) 
         utt_id = 0
         for idx in range(len(relations)):
             conv_start, conv_end = utterances[utt_id]['span_text']
@@ -213,8 +217,14 @@ class TripleProcessor:
             sub_span = relations[idx]['head_span']
             
             #iterates the utterance to match the current subject span. We assume that subject and object in the same utterance.
-            while not (conv_start < sub_span['start'] and sub_span['start'] < conv_end):
+            while not (conv_start <= sub_span['start'] and sub_span['start'] < conv_end):
                 utt_id +=1
+                #print(conv['conv_id'])
+                #print(utterances[utt_id]['span_text'], sub_span['start'],sub_span['end'], text[sub_span['start']:sub_span['end']])
+                #print(utt_id, len(utterance))
+                if len(utterances) == utt_id:
+                    print("Something is wrong with Conversation with id : {}".format(conv['conv_id']))
+                    return
                 conv_start, conv_end = utterances[utt_id]['span_text']
 
             obj_span = relations[idx]['child_span']
@@ -250,16 +260,33 @@ class TripleProcessor:
         f = open(path,'w')
         for x in self.data_convs:
             f.write(json.dumps(x)+'\n')
-    
+    def __remove_rels_from_utt__(self, utt):
+        del utt['relations']
+        return utt
     def export_el_annotation_data(self, conceptnet_path, out_pointer):
+        start = time.time()
         cg = CandidateGenerator(conceptnet_path=conceptnet_path)
+        print("ConceptNet loaded after: {}s".format(str(time.time()-start)))
         counter = 0
+        def remove_rels_from_utt(utt):
+            del utt['relations']
+            return utt
+        def remove_zero_choice(utt):
+            if len(utt['options']) == 0:
+                return None
+            return utt
         for conv in self.data_convs:
             utts = cg.candidatesFor(conv)
             for u in utts:
                 counter += 1
-                out_pointer.write(json.dumps(u)+'\n')
+                d = remove_rels_from_utt(u)
+                d = remove_zero_choice(d)
+                if d is None:
+                    continue
+                out_pointer.write(json.dumps(d)+'\n')
+            print("Conversation ID {} finished after {}".format(conv['conv_id'], str(time.time()-start)))
         print("Utterances Writtes:\t{}\n".format(counter))
+        print("Process finished after: {}s".format(str(time.time()-start)))
     #calculates the new indices og entity mentions for the utterances
     def __find_new_idx__(text, utt, rel_span):
         word = text[rel_span['start']:rel_span['end']]
@@ -282,14 +309,17 @@ def create_ids(path, conv_id=0):
 if __name__=="__main__":
     #ready for next string
     #create_ids('convs/convab.jsonl', 400)
-    pass
     """for valid
     d= 'personachat/personachat_'
     combine_dataset(d+'train.jsonl',d+'valid.jsonl',d+'test.jsonl', d+'combined.jsonl')"""
     """p = 'convs' 
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
-    c = TripleProcessor('entity_linking_sample.jsonl')
+    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
+    f = open('sample.jsonl','w')
+    c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
+    f.close()
+
     #c.write_data('el_sample3.jsonl')
 
     #remove_duplicate('convs/convab.jsonl', 'annotations_data/triple1.jsonl')
