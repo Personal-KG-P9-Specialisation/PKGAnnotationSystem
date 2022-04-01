@@ -141,6 +141,7 @@ class CandidateGenerator:
         node2s = set(df.iloc[:,3])
         nodes = list(node1s)
         nodes.extend(list(node2s))
+        nodes = [n for n in nodes if n.startswith('/c/en')]
         return list(set(nodes))
 
     #taken from our PKGAnalysis repository
@@ -156,11 +157,20 @@ class CandidateGenerator:
     def candidatesFor(self,conv):
         lst_of_utt = []
         for i in range(len(conv['utterances'])):
-            utts = self.create_candidate(conv['utterances'][i])
+            if conv['utterances'][i] is None:
+                continue
+            utts = self.create_candidate_no_copy(conv['utterances'][i])
             lst_of_utt.extend(utts)
         return lst_of_utt
 
-     
+    def create_candidate_no_copy(self, utt):
+        phrases = utt['spans']
+        utt['options2'] = []
+        for i in range(len(phrases)):
+            utt['options2'].append(self.entity_candidates(phrases[i]['text']))
+        return [utt] #returned as a list for backward compatibility
+
+
     def create_candidate(self, utt):
         phrases = utt['spans']
         lst_of_utt = []
@@ -280,7 +290,7 @@ class TripleProcessor:
             for u in utts:
                 counter += 1
                 d = remove_rels_from_utt(u)
-                d = remove_zero_choice(d)
+                #d = remove_zero_choice(d) maybe necessary if revert.
                 if d is None:
                     continue
                 out_pointer.write(json.dumps(d)+'\n')
