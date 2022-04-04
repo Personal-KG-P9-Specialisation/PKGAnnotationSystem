@@ -64,7 +64,7 @@ class DatasetSplitter:
         self.path = src_path
         self.ldp = loaded_data_path
         self.n_chars = n_chars
-        self.__load_dublicate_check_lst()
+        self.__load_duplicate_check_lst()
 
     def __load_duplicate_check_lst(self):
         f = open(self.ldp, 'r')
