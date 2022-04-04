@@ -107,6 +107,22 @@ def remove_duplicate(path, path_anno):
         w.write(json.dumps(c)+'\n')
     path_f.close()
     w.close()
+def remove_dublicate_anno(path_anno):
+    dup_lst = []
+    dup_count = 0
+
+    f = open(path_anno,'r')
+    w = open(path_anno+'.bak','w')
+    for line in f:
+        conv = json.loads(line)
+        if conv['text'] in dup_lst:
+            dup_count +=1
+            continue
+        dup_lst.append(conv['text'])
+        w.write(line)
+    f.close()
+    w.close()
+    print("Amount of duplicate conversation in annotations:\t{}".format(dup_count))
 
 #combing the personachat datafiles into a single souce
 def combine_dataset(path1, path2, path3, output_path):
@@ -325,10 +341,12 @@ if __name__=="__main__":
     """p = 'convs' 
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
-    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
+    
+    remove_dublicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
+    """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
     f = open('sample.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
-    f.close()
+    f.close()"""
 
     #c.write_data('el_sample3.jsonl')
 
