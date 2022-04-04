@@ -185,7 +185,7 @@ class CandidateGenerator:
             lst_of_utt.extend(utts)
         return lst_of_utt
 
-    #creates candidates for spans in utterence and save them option2 for each span in utterance
+    #creates candidates for spans in utterance and save them option2 for each span in utterance
     # A more efficient approach to create_candidate.
     def create_candidate_no_copy(self, utt):
         phrases = utt['spans']
