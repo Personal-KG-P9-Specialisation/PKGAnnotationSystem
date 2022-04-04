@@ -93,7 +93,7 @@ class DatasetSplitter:
         w.close()
 
 
-# Removes duplicate conversations from the path file from the path_anno files (annotated conversations in the DB), and stores it with a -.bak extention.
+# Removes duplicate conversations from the path file to the path_anno files (annotated conversations in the DB), and stores it with a -.bak extention.
 def remove_duplicate(path, path_anno):
     dup_lst = list()
     w = open(path+'.bak','w')
