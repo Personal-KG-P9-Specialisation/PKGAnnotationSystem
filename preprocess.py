@@ -112,7 +112,7 @@ def remove_duplicate(path, path_anno):
     w.close()
 
 # Removes duplicate entries in triple annotations.
-def remove_dublicate_anno(path_anno):
+def remove_duplicate_anno(path_anno):
     dup_lst = []
     dup_count = 0
 
@@ -357,7 +357,7 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    remove_dublicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
+    remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
     """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
     f = open('sample.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
