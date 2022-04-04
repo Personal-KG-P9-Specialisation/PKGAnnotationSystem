@@ -1,6 +1,6 @@
 import os, json, difflib, copy
 
-#Class for representing a conversation
+#Class for representing a conversation. Used to convert 
 class Conversation:
     def __init__(self, utterances: list):
         self.agent1_utterances = list()
@@ -29,16 +29,19 @@ class Conversation:
 
         o = {'text': conversation[:-1]}
         return json.dumps(o)
-#Process the personachat .txt files processed by ... into conversations usable by the triple annotations system
+
+#Process the personachat .txt files produced in PKGAnalysis repo into conversations usable by the triple annotations system
 class ConversationProcessor:
     def __init__(self, path:str):
         self.conv_files = ConversationProcessor.order_conv_files(path)
         self.convs = [self.__create_conversation(x) for x in self.conv_files]
     
+    #order conversations according to our score, which indicates the amount of personal information.
     def order_conv_files(path):
         rank_cmp = lambda rank: int(rank.split('/')[-1].split('c')[0])
         files =sorted( ["{}/{}".format(path,x) for x in os.listdir(path) if x.endswith('.txt')], key=rank_cmp, reverse=True)
         return files
+
     def __create_conversation(self, path):
         data = None
         with open(path, 'r') as f:
@@ -53,7 +56,7 @@ class ConversationProcessor:
             f.write('\n')
         f.close()
 
-#Split the dataset into n lines long files
+#Split the dataset into n lines/conversations long files
 class DatasetSplitter:
     def __init__(self, src_path, loaded_data_path, n_chars):
         self.path = src_path
@@ -88,7 +91,7 @@ class DatasetSplitter:
         w.close()
 
 
-#Removes duplicate conversations from the path file from the path_anno files (annotated conversations in the DB)
+# Removes duplicate conversations from the path file from the path_anno files (annotated conversations in the DB), and stores it with a -.bak extention.
 def remove_duplicate(path, path_anno):
     dup_lst = list()
     w = open(path+'.bak','w')
@@ -106,7 +109,7 @@ def remove_duplicate(path, path_anno):
     path_f.close()
     w.close()
 
-#combing the personachat datafiles into a single souce
+#combing the personachat datafiles from parlai commands into a single souce file
 def combine_dataset(path1, path2, path3, output_path):
     f = open(output_path,'w')
     with open(path1, 'r') as f1:
@@ -119,8 +122,8 @@ def combine_dataset(path1, path2, path3, output_path):
         f.writelines(f1.readlines())
     f.close()
 
-#Creates candidates for subject/object mentions outputted for one conversation.
-# Is used in TriplePorcessor
+#Creates entity candidates for subject/object mentions outputted for one conversation.
+# Is used in TripleProcessor
 class CandidateGenerator:
     def __init__(self,conceptnet_path='',entities=[]):
         self.entities = entities
@@ -176,7 +179,9 @@ class TripleProcessor:
     def __init__(self, data_path):
         self.data_convs = []
         self.data_path = data_path
+        #Loads conversations from data_path into data_convs
         self.__load_data_path()
+        #creates 
         self.convert_all_convs()
 
     def __load_data_path(self):
