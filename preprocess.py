@@ -129,7 +129,7 @@ def remove_duplicate_anno(path_anno):
     w.close()
     print("Amount of duplicate conversation in annotations:\t{}".format(dup_count))
 
-#combing the personachat datafiles from parlai commands into a single souce file
+#combing the personachat datafiles from parlai commands into a single source file
 def combine_dataset(path1, path2, path3, output_path):
     f = open(output_path,'w')
     with open(path1, 'r') as f1:
