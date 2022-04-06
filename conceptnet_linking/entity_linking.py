@@ -109,5 +109,5 @@ def _create_options(stream):
 def _print_url(entity_id):
     """ For each candidate QID, create a link to the corresponding Wikidata page and print the description """
     url_prefix = "https://conceptnet.io"
-    option = "<a href='" + url_prefix + entity_id + "' target='_blank'>" + entity_id.split('/')[-1] + "</a>"
+    option = "<p title='&#63 for more info'> "+entity_id.split('/')[-1] +" <a href='" + url_prefix + entity_id + "' target='_blank' style='float: right;padding-right: 30px;'>" + "<span>&#63;</span>" + "</a></p>"
     return option
