@@ -93,10 +93,12 @@ import copy
 def _create_options(stream):
     for task in stream:
         for idx,span in enumerate(task["spans"]):
-            new_task = copy.deepcopy(task)
             start_char = int(span["start"])
             end_char = int(span["end"])
             mention = task['text'][start_char:end_char]
+            if mention.lower() in ["my", "your","his", "her", "its", "our", "their", "i", "we"]:
+                continue
+            new_task = copy.deepcopy(task)
             if task['options2'][idx] != []:
                 options = [{"id": c['id'], "html": _print_url(c['id'])} for c in task['options2'][idx]]
                 options.append({"id": "NIL_otherLink", "text": "Entity not in options"})
