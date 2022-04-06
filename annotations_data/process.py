@@ -1,6 +1,6 @@
 import json
 
-def dublicate_check(path):
+def duplicate_check(path):
     data_w_n = list()
     f = open(path,'r')
     for idx,line in enumerate(f):
