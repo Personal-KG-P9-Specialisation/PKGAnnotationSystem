@@ -230,7 +230,9 @@ class TripleProcessor:
     def convert_all_convs(self):
         convs = []
         for x in self.data_convs:
-            convs.append(self.convert_conv(x))
+            temp_conv = self.convert_conv(x)
+            if not temp_conv is None:
+                convs.append(temp_conv)
         self.data_convs = convs
 
     def convert_conv(self, conv):
@@ -346,6 +348,34 @@ def create_ids(path, conv_id=0):
         f.write(json.dumps(conv)+'\n')
         conv_id += 1
 
+# Creates ids for conversations in dataset
+def assign_ids_to_missing_convs(path_anno):
+    f = open(path_anno,'r')
+    data = []
+    conv_ids =  []
+    for line in f:
+        conv = json.loads(line)
+        data.append(conv)
+        temp = conv.get('conv_id')
+        if temp:
+            conv_ids.append(conv['conv_id'])
+    f.close()
+    assigned_ids = []
+    for conv in range(len(data)):
+        conv_id = data[conv].get('conv_id')
+        if not conv_id:
+            temp = 0
+            while temp in conv_ids:
+                temp +=1
+            data[conv]['conv_id'] = temp
+            assigned_ids.append(temp)
+            conv_ids.append(temp)
+    print('Conversations IDs assigned:\t',assigned_ids,'\n')
+    with open(path_anno+".bak","w") as f:
+        for conv in data:
+            f.write(json.dumps(conv)+'\n')
+    print("Missing conv_id assignment process finished!!!")
+
 
 if __name__=="__main__":
     #ready for next string
@@ -357,11 +387,12 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
-    """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
-    f = open('sample.jsonl','w')
+    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april5_trpl.jsonl')
+    #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl')
+    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl.bak')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/conceptnet_entity_input.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
-    f.close()"""
+    f.close()
 
     #c.write_data('el_sample3.jsonl')
 

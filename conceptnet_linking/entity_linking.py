@@ -4,16 +4,12 @@ Run the following command in the directory to start server. Requires sample2.jso
 python3 -m prodigy entity_linker.manual ents sample2.jsonl -F entity_linking.py
 """
 
-import spacy
-from spacy.kb import KnowledgeBase
 
 import prodigy
-from prodigy.models.ner import EntityRecognizer
 from prodigy.components.loaders import TXT, JSONL
 from prodigy.util import set_hashes
 from prodigy.components.filters import filter_duplicates
 
-import csv
 from pathlib import Path
 
 
@@ -55,7 +51,7 @@ def entity_linker_manual(dataset, source):#, nlp_dir, kb_loc, entity_loc):
         "dataset": dataset,
         "stream": stream,
         "view_id": "choice",
-        "config": {"choice_auto_accept": True},
+        "config": {"choice_auto_accept": False}
     }
 
 #Method from tutorial
@@ -97,12 +93,14 @@ import copy
 def _create_options(stream):
     for task in stream:
         for idx,span in enumerate(task["spans"]):
-            new_task = copy.deepcopy(task)
             start_char = int(span["start"])
             end_char = int(span["end"])
             mention = task['text'][start_char:end_char]
+            if mention.lower() in ["my", "your","his", "her", "its", "our", "their", "i", "we"]:
+                continue
+            new_task = copy.deepcopy(task)
             if task['options2'][idx] != []:
-                options = [{"id": c['id'], "text": c['id'].split('/')[-1]} for c in task['options2'][idx]]
+                options = [{"id": c['id'], "html": _print_url(c['id'])} for c in task['options2'][idx]]
                 options.append({"id": "NIL_otherLink", "text": "Entity not in options"})
                 options.append({"id": "NIL_ambiguous", "text": "Need more context"})
                 new_task["options"] = options
@@ -110,9 +108,8 @@ def _create_options(stream):
                 yield new_task
 
 #TODO: needs modification to Conceptnet instead.
-def _print_url(entity_id, id_dict):
+def _print_url(entity_id):
     """ For each candidate QID, create a link to the corresponding Wikidata page and print the description """
-    url_prefix = "https://www.wikidata.org/wiki/"
-    name, descr = id_dict.get(entity_id)
-    option = "<a href='" + url_prefix + entity_id + "'>" + entity_id + "</a>: " + descr
+    url_prefix = "https://conceptnet.io"
+    option = "<p title='&#63 for more info'> "+entity_id.split('/')[-1] +" <a href='" + url_prefix + entity_id + "' target='_blank' style='float: right;padding-right: 30px;'>" + "<span>&#63;</span>" + "</a></p>"
     return option
