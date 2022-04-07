@@ -167,7 +167,7 @@ class CandidateGenerator:
         return list(set(nodes))
 
     #taken from our PKGAnalysis repository
-    def entity_candidates(self, em, n=5, cutoff = 0.3):
+    def entity_candidates(self, em, n=5, cutoff = 0.1):
         el_list = list()
         for e in self.entities:
             if em in str(e):
@@ -390,7 +390,7 @@ if __name__=="__main__":
     #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april5_trpl.jsonl')
     #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl')
     c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl.bak')
-    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/conceptnet_entity_input.jsonl','w')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/conceptnet_entity_input_01cutoff.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
     f.close()
 
