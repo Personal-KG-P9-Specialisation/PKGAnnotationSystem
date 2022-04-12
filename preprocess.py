@@ -1,6 +1,6 @@
 import os, json, difflib, copy
 import pandas as pd
-import time
+import time, argparse
 
 #Class for representing a conversation. Used to convert .txt convs to jsonl 
 class Conversation:
@@ -212,13 +212,14 @@ class CandidateGenerator:
 
 #Processes the triple annotated data and makes it available for all the other tasks.
 class TripleProcessor:
-    def __init__(self, data_path):
+    def __init__(self, data_path, convert_to_utt=True):
         self.data_convs = []
         self.data_path = data_path
         #Loads conversations from data_path into data_convs
         self.__load_data_path()
         # organises conversations into utterances.
-        self.convert_all_convs()
+        if convert_to_utt:
+            self.convert_all_convs()
 
     def __load_data_path(self):
         data_json = []
@@ -226,6 +227,25 @@ class TripleProcessor:
             for idx,line in enumerate(f):
                 data_json.append( json.loads(line))
         self.data_convs = data_json
+    
+    def export_personal(self, file_pointer):
+        for idx in range(len(self.data_convs)):
+            conv = self.data_convs[idx]
+            new_conv = {'conv_id':conv['conv_id'], 'text':conv['text']}
+            spans = []
+            for x in conv['relations']:
+                head_span = x['head_span']
+                head_span['label'] = 'PERSONAL'
+                child_span = x['child_span']
+                child_span['label'] = 'PERSONAL'
+                if not "agent" in conv['text'][head_span['start']:head_span['end']].lower():
+                    spans.append(head_span)
+                
+                if not "agent" in conv['text'][child_span['start']:child_span['end']].lower():
+                    spans.append(child_span)
+                
+            new_conv['spans'] = spans
+            file_pointer.write(json.dumps(new_conv)+'\n')
 
     def convert_all_convs(self):
         convs = []
@@ -346,8 +366,42 @@ def create_ids(path, conv_id=0):
         f.write(json.dumps(conv)+'\n')
         conv_id += 1
 
+class Personal_entity_processor(TripleProcessor):
+    def __init__(self, data_path):
+        super(Personal_entity_processor,self).__init__(data_path)
+
+    def export_personal_entities(self, out_pointer):
+        start = time.time()
+        for i in range(len(self.data_convs)):
+            text = ''
+            utts = self.data_convs[i]['utterances']
+            so_far = 0
+            spans = []
+            for u in utts:
+                text += u['text']
+        pass
 
 if __name__=="__main__":
+    parser = argparse.ArgumentParser(description='The preprocessing and post processing of the annotated data')
+    parser.add_argument('--option' ,type=str)
+    parser.add_argument('--input', help='Input data file')
+    parser.add_argument('--output', help='Output path for file')
+    args = parser.parse_args()
+    if args.option == 'personal_entity':
+        if args.input is None:
+           path = ''
+        else:
+            path = args.input
+        if args.output is None:
+            o_path = ''
+        else:
+            o_path = args.output
+        c = TripleProcessor(path, convert_to_utt=False)
+        o_path = ''
+        of = open(o_path,'w')
+        c.export_personal(of)
+    else:
+        parser.print_help()
     #ready for next string
     #create_ids('convs/convab.jsonl', 400)
     """for valid
@@ -357,7 +411,7 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
+    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
     """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
     f = open('sample.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
@@ -369,3 +423,5 @@ if __name__=="__main__":
     #remove_duplicate('convs/convab.jsonl', 'annotations_data/triple1.jsonl')
     #c = DatasetSplitter("convs/conv.jsonl","annotations_data/triple1.jsonl", 20)
     #c.split_data(200)
+
+   
