@@ -397,12 +397,14 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl')
-    assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl')
-    """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl.bak')
-    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/conceptnet_entity_input.jsonl','w')
+    #step 1
+    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/annotated_triples.jsonl')
+    #step 2
+    #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/conceptnet_entity_input.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
-    f.close()"""
+    f.close()
 
     #c.write_data('el_sample3.jsonl')
 
