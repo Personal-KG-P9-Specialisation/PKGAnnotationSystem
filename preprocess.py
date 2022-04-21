@@ -1,6 +1,6 @@
 import os, json, difflib, copy
 import pandas as pd
-import time
+import time, sys
 
 #Class for representing a conversation. Used to convert .txt convs to jsonl 
 class Conversation:
@@ -240,12 +240,12 @@ class TripleProcessor:
         text = conv['text']
         utterances = text.split('\n')
         utterances = [{'text':x, 'span_text': [], 'relations':[], 'spans':[],'turn': None, 'conv_id':conv['conv_id']} for x in utterances]
-        
+        wrong_rel_map_count = 0
         start = 0
-        text_utt_map = {}
         for idx in range(len(utterances)):
             utterances[idx]['span_text'] = (start,start+len(utterances[idx]['text']))
             start += len(utterances[idx]['text'])
+            start += 1
 
         relations = conv['relations']
         relations.sort(key=lambda x: x['head_span']['start']) 
@@ -274,6 +274,13 @@ class TripleProcessor:
             utterances[utt_id]['spans'].append(adj_rel['head_span'])
             utterances[utt_id]['spans'].append(adj_rel['child_span'])
 
+            #Triple mapping Error checks
+            if utterances[utt_id]['text'][adj_rel['head_span']['start']:adj_rel['head_span']['end']] != \
+                text[ relations[idx]['head_span']['start']:relations[idx]['head_span']['end'] ]:
+                wrong_rel_map_count += 1
+            if utterances[utt_id]['text'][adj_rel['child_span']['start']:adj_rel['child_span']['end']] != text[relations[idx]['child_span']['start']:relations[idx]['child_span']['end']]:
+                wrong_rel_map_count += 1
+
         #assigns turn for utterances and removes span_text which is used in calculating new span indices.
         for idx, x in enumerate(utterances):
             del x['span_text']
@@ -281,6 +288,9 @@ class TripleProcessor:
         """with open('entity_linking_sample2.jsonl','w') as f:
             for x in utterances:
                 f.write(json.dumps(x)+'\n')"""
+        if wrong_rel_map_count > 0:
+            print(f"{conv['conv_id']}: Entity mentions are wrong {wrong_rel_map_count}", file=sys.stderr)
+
         return {'utterances' : utterances, 'conv_id': conv['conv_id']}
         
 
@@ -388,10 +398,12 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april5_trpl.jsonl')
-    #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl')
-    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_trpl.jsonl.bak')
-    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/temp/conceptnet_entity_input_01cutoff.jsonl','w')
+    #step 1
+    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/annotated_triples.jsonl')
+    #step 2
+    #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/conceptnet_entity_input.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
     f.close()
 
