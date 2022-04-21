@@ -19,30 +19,11 @@ from pathlib import Path
     "entity_linker.manual",
     dataset=("The dataset to use", "positional", None, str),
     source=("The source data as a .txt file", "positional", None, Path),
-    #nlp_dir=("Path to the NLP model with a pretrained NER component", "positional", None, Path),
-    #kb_loc=("Path to the KB", "positional", None, Path),
-    #entity_loc=("Path to the file with additional information about the entities", "positional", None, Path),
 )
-def entity_linker_manual(dataset, source):#, nlp_dir, kb_loc, entity_loc):
-    # Load the NLP and KB objects from file
-    #nlp = spacy.load(nlp_dir)
-    #kb = KnowledgeBase(vocab=nlp.vocab, entity_vector_length=1)
-    #kb.load_bulk(kb_loc)
-    #model = EntityRecognizer(nlp)
-
-    # Read the pre-defined CSV file into dictionaries mapping QIDs to the full names and descriptions
-    #id_dict = dict()
-    #with entity_loc.open("r", encoding="utf8") as csvfile:
-    #    csvreader = csv.reader(csvfile, delimiter=",")
-    #    for row in csvreader:
-    #        id_dict[row[0]] = (row[1], row[2])
+def entity_linker_manual(dataset, source):
 
     # Initialize the Prodigy stream by running the NER model
     stream = JSONL(source)
-    #stream = [set_hashes(eg) for eg in stream]
-    #stream = (eg for score, eg in model(stream))
-    # For each NER mention, add the candidates from the KB to the annotation task
-    #stream = _add_options(stream, kb, id_dict)
     stream = _create_options(stream)
     stream = [set_hashes(eg) for eg in stream]
     stream = filter_duplicates(stream, by_input=False, by_task=True)
@@ -107,9 +88,14 @@ def _create_options(stream):
                 new_task["spans"] = [span]
                 yield new_task
 
-#TODO: needs modification to Conceptnet instead.
+
+def process_entity_id(em):
+    splits = em.split('/')
+    if splits[-1] in ['v','n']:
+        return splits[-2]
+    return splits[-1]
+
 def _print_url(entity_id):
-    """ For each candidate QID, create a link to the corresponding Wikidata page and print the description """
     url_prefix = "https://conceptnet.io"
-    option = "<p title='&#63 for more info'> "+entity_id.split('/')[-1] +" <a href='" + url_prefix + entity_id + "' target='_blank' style='float: right;padding-right: 30px;'>" + "<span>&#63;</span>" + "</a></p>"
+    option = "<p title='&#63 for more info'> "+process_entity_id(entity_id) +" <a href='" + url_prefix + entity_id + "' target='_blank' style='float: right;padding-right: 30px;'>" + "<span>&#63;</span>" + "</a></p>"
     return option

@@ -169,6 +169,7 @@ class CandidateGenerator:
     #taken from our PKGAnalysis repository
     def entity_candidates(self, em, n=5, cutoff = 0.1):
         el_list = list()
+        self.entities = [x.replace(' ','_') for x in self.entities if len(x.split(' '))>0]
         for e in self.entities:
             if em in str(e):
                 el_list.append(e)
