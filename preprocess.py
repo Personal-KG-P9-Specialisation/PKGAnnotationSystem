@@ -379,6 +379,7 @@ def create_ids(path, conv_id=0):
         f.write(json.dumps(conv)+'\n')
         conv_id += 1
 
+#Outdated implementations of Personal annotation entity input.
 class Personal_entity_processor(TripleProcessor):
     def __init__(self, data_path):
         super(Personal_entity_processor,self).__init__(data_path)
@@ -440,16 +441,12 @@ def assign_ids_to_missing_convs(path_anno):
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='The preprocessing and post processing of the annotated data')
     parser.add_argument('--option' ,type=str)
-    parser.add_argument('--input', help='Input data file', const='', default='')
-    parser.add_argument('--output', help='Output path for file', const='', default='')
+    parser.add_argument('--input', help='Input data file')
+    parser.add_argument('--output', help='Output path for file',nargs='?', const='./outfile.txt', default='./outfile.txt')
     args = parser.parse_args()
     if args.option == 'personal_entity':
         path = args.input
         o_path = args.output
-        """c = Personal_entity_processor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
-        f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/personal_entity_input.jsonl','w')
-        c.export_personal_entities(f,'Personal')
-        f.close()"""
         c = TripleProcessor(path, convert_to_utt=False)
         of = open(o_path,'w')
         c.export_personal(of)
