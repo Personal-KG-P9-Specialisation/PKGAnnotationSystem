@@ -1,6 +1,6 @@
 import os, json, difflib, copy
 import pandas as pd
-import time, argparse
+import time, argparse, sys
 
 #Class for representing a conversation. Used to convert .txt convs to jsonl 
 class Conversation:
@@ -167,8 +167,9 @@ class CandidateGenerator:
         return list(set(nodes))
 
     #taken from our PKGAnalysis repository
-    def entity_candidates(self, em, n=5, cutoff = 0.3):
+    def entity_candidates(self, em, n=5, cutoff = 0.1):
         el_list = list()
+        self.entities = [x.replace(' ','_') for x in self.entities if len(x.split(' '))>0]
         for e in self.entities:
             if em in str(e):
                 el_list.append(e)
@@ -250,19 +251,21 @@ class TripleProcessor:
     def convert_all_convs(self):
         convs = []
         for x in self.data_convs:
-            convs.append(self.convert_conv(x))
+            temp_conv = self.convert_conv(x)
+            if not temp_conv is None:
+                convs.append(temp_conv)
         self.data_convs = convs
 
     def convert_conv(self, conv):
         text = conv['text']
         utterances = text.split('\n')
         utterances = [{'text':x, 'span_text': [], 'relations':[], 'spans':[],'turn': None, 'conv_id':conv['conv_id']} for x in utterances]
-        
+        wrong_rel_map_count = 0
         start = 0
-        text_utt_map = {}
         for idx in range(len(utterances)):
             utterances[idx]['span_text'] = (start,start+len(utterances[idx]['text']))
             start += len(utterances[idx]['text'])
+            start += 1
 
         relations = conv['relations']
         relations.sort(key=lambda x: x['head_span']['start']) 
@@ -291,6 +294,13 @@ class TripleProcessor:
             utterances[utt_id]['spans'].append(adj_rel['head_span'])
             utterances[utt_id]['spans'].append(adj_rel['child_span'])
 
+            #Triple mapping Error checks
+            if utterances[utt_id]['text'][adj_rel['head_span']['start']:adj_rel['head_span']['end']] != \
+                text[ relations[idx]['head_span']['start']:relations[idx]['head_span']['end'] ]:
+                wrong_rel_map_count += 1
+            if utterances[utt_id]['text'][adj_rel['child_span']['start']:adj_rel['child_span']['end']] != text[relations[idx]['child_span']['start']:relations[idx]['child_span']['end']]:
+                wrong_rel_map_count += 1
+
         #assigns turn for utterances and removes span_text which is used in calculating new span indices.
         for idx, x in enumerate(utterances):
             del x['span_text']
@@ -298,6 +308,9 @@ class TripleProcessor:
         """with open('entity_linking_sample2.jsonl','w') as f:
             for x in utterances:
                 f.write(json.dumps(x)+'\n')"""
+        if wrong_rel_map_count > 0:
+            print(f"{conv['conv_id']}: Entity mentions are wrong {wrong_rel_map_count}", file=sys.stderr)
+
         return {'utterances' : utterances, 'conv_id': conv['conv_id']}
         
 
@@ -395,25 +408,52 @@ class Personal_entity_processor(TripleProcessor):
         span['start'],span['end'] = span['start']+sofar,span['end']+sofar
         return span
 
+# Creates ids for conversations in dataset
+def assign_ids_to_missing_convs(path_anno):
+    f = open(path_anno,'r')
+    data = []
+    conv_ids =  []
+    for line in f:
+        conv = json.loads(line)
+        data.append(conv)
+        temp = conv.get('conv_id')
+        if temp:
+            conv_ids.append(conv['conv_id'])
+    f.close()
+    assigned_ids = []
+    for conv in range(len(data)):
+        conv_id = data[conv].get('conv_id')
+        if not conv_id:
+            temp = 0
+            while temp in conv_ids:
+                temp +=1
+            data[conv]['conv_id'] = temp
+            assigned_ids.append(temp)
+            conv_ids.append(temp)
+    print('Conversations IDs assigned:\t',assigned_ids,'\n')
+    with open(path_anno+".bak","w") as f:
+        for conv in data:
+            f.write(json.dumps(conv)+'\n')
+    print("Missing conv_id assignment process finished!!!")
+
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='The preprocessing and post processing of the annotated data')
     parser.add_argument('--option' ,type=str)
-    parser.add_argument('--input', help='Input data file')
-    parser.add_argument('--output', help='Output path for file')
+    parser.add_argument('--input', help='Input data file', const='', default='')
+    parser.add_argument('--output', help='Output path for file', const='', default='')
     args = parser.parse_args()
     if args.option == 'personal_entity':
-        if args.input is None:
-           path = ''
-        else:
-            path = args.input
-        if args.output is None:
-            o_path = ''
-        else:
-            o_path = args.output
+        path = args.input
+        o_path = args.output
+        """c = Personal_entity_processor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+        f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/personal_entity_input.jsonl','w')
+        c.export_personal_entities(f,'Personal')
+        f.close()"""
         c = TripleProcessor(path, convert_to_utt=False)
-        o_path = ''
         of = open(o_path,'w')
         c.export_personal(of)
+        of.close()
     else:
         parser.print_help()
     #ready for next string
@@ -425,10 +465,19 @@ if __name__=="__main__":
     c = ConversationProcessor(p)
     c.write_convs_to_jsonl("{}/conv.jsonl".format(p))"""
     
-    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/april1_trpl.jsonl')
-    """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/a_trpl_filt.jsonl')
-    f = open('sample.jsonl','w')
+    #step 1
+    #remove_duplicate_anno('/home/test/Github/PKGAnnotationSystem/annotations_data/annotated_triples.jsonl')
+    #step 2
+    #assign_ids_to_missing_convs('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    #step 3.1
+    """c = TripleProcessor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/conceptnet_entity_input.jsonl','w')
     c.export_el_annotation_data('/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv',f)
+    f.close()"""
+    #step 3.2
+    """c = Personal_entity_processor('/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl')
+    f = open('/home/test/Github/PKGAnnotationSystem/annotations_data/personal_entity_input.jsonl','w')
+    c.export_personal_entities(f,'Personal')
     f.close()"""
 
     #c.write_data('el_sample3.jsonl')
