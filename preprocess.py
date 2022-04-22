@@ -370,7 +370,7 @@ class Personal_entity_processor(TripleProcessor):
     def __init__(self, data_path):
         super(Personal_entity_processor,self).__init__(data_path)
 
-    def export_personal_entities(self, out_pointer):
+    def export_personal_entities(self, out_pointer, em_label:str):
         start = time.time()
         for i in range(len(self.data_convs)):
             text = ''
@@ -379,7 +379,21 @@ class Personal_entity_processor(TripleProcessor):
             spans = []
             for u in utts:
                 text += u['text']
-        pass
+                text += '\n'
+                for rel_idx in enumerate(u['relations']):
+                    adj_sub, adj_obj = Personal_entity_processor.create_conv_level_indices(u['relations'][rel_idx]['head_span']) , Personal_entity_processor.create_conv_level_indices(u['relations'][rel_idx]['child_span'])
+                    spans.add(adj_sub)
+                    spans.add(adj_obj)
+                so_far += (len(u['text'])+1)
+            out_pointer.write(json.dumps({'conv_id':self.data_convs[i]['conv_id'],'text':text,'spans':spans}))
+            print(f"[Time, {time.time()-start}] Conversation {self.data_convs[i]['conv_id']} is finished")
+
+    def create_conv_level_indices(span,text_sofar, em_label, sofar):
+        span['label'] = em_label
+        span_text = text_sofar[span['start']+sofar:span['end']+sofar]
+        assert span_text == span['text']
+        span['start'],span['end'] = span['start']+sofar,span['end']+sofar
+        return span
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='The preprocessing and post processing of the annotated data')
