@@ -22,11 +22,18 @@ if __name__ == "__main__":
         cmd = "python3 -m prodigy rel.manual "+database+" blank:en "+conv_file+" --label "+rel_text+" --span-label AGENT,ENTITY --wrap --add-ents --patterns agent_pattern.jsonl --disable-patterns "+dis_pattern
         os.system(cmd)
     elif args.type == 'CSKG_ents':
-        db = os.getenv('DB')
+        db = os.getenv('DATABASE')
         instructions = 'conceptnet_linking/concept_instructions.html'
         datafile = os.getenv('concept_data')
         cmd = "python3 -m prodigy entity_linker.manual "+db+" "+datafile+" -F conceptnet_linking/entity_linking.py"
         os.environ["PRODIGY_CONFIG_OVERRIDES"] = '{"instructions":"'+instructions+'"}'
         os.system(cmd)
     elif args.type == 'personal_ent':
-        pass
+        db = os.getenv('DATABASE')
+        instructions = 'personal_entity/personal_instructions.html'
+        os.environ["PRODIGY_CONFIG_OVERRIDES"] = '{"instructions":"'+instructions+'"}'
+        datafile = os.getenv('personal_data')
+        dis_pattern = os.getenv('dis_pattern')
+
+        cmd = f"python3 -m prodigy rel.manual {db} blank:en {datafile} --label COREF --span-label PERSONAL,AGENT --add-ents --wrap --patterns agent_pattern.jsonl --disable-patterns {dis_pattern}"
+        os.system(cmd)
