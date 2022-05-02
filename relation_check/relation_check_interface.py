@@ -1,3 +1,4 @@
+import os
 from preprocess import TripleProcessor
 import json
 
@@ -10,8 +11,8 @@ class AnnotationInterface(TripleProcessor):
     def interface(self, file_pointer):
         def snap_input_to_bool(value: str):
             if value == 'v':
-                return False
-            return True
+                return True
+            return False
         def read_processed_convs():
             conv_ids = []
             for line in file_pointer:
@@ -27,9 +28,9 @@ class AnnotationInterface(TripleProcessor):
             print(f"Current conversation: {conv['conv_id']} \n")
             new_utterances = []
             for utt in conv['utterances']:
-                new_rels = []
+                #new_rels = []
                 for rel in utt['relations']:
-                    if rel['label'] == 'HasProperty':
+                    if rel['label'] == 'HasProperty' or rel['label'] == 'IsA':
                         print(f"Utterance text: {utt['text']}\n")
                         sbj = rel['head_span'] 
                         sbj_text = utt['text'][sbj['start'] : sbj['end']]
@@ -39,15 +40,18 @@ class AnnotationInterface(TripleProcessor):
                         change = snap_input_to_bool(input())
                         if change:
                             rel['label'] = 'HasValue'
-                        new_rels.append(rel)
-                    else:
-                        new_rels.append(rel)
+                        #new_rels.append(rel)
+                    #else:
+                        #new_rels.append(rel)
                 new_utterances.append(utt)
             file_pointer.write(json.dumps({"conv_id": conv['conv_id'], "utterances": new_utterances}) + '\n')
 
 if __name__ == "__main__":
-    conv_path = '/home/test/Github/PKGAnnotationSystem/annotations_data/temp/april5_filt_trpl.jsonl'
+    conv_path = os.getenv('conv_path')
+    triple_path = os.getenv('triple_path')
+    #conv_path = '/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl'
     c = AnnotationInterface(conv_path)
-    f = open('/home/test/Github/PKGAnnotationSystem/temp.jsonl','r+')
+    #triple_path = '/home/test/Github/PKGAnnotationSystem/annotations_data/updated_filtered_relation_annotated_triples.jsonl'
+    f = open(triple_path,'r+')
     c.interface(f)
     f.close()
