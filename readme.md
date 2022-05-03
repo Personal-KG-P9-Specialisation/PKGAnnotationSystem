@@ -1,5 +1,15 @@
 # Personal Knowledge Graph Annotation Interfaces and Processing
 
+## Requirements
+- git LFS
+- Prodigy License
+
+## Personal entities
+First create input data for personal entity annotation system by:
+```
+python3 -m preprocess --option personal_entity --input annotations_data/filtered_annotated_triples.jsonl --output annotations_data/personal_entity_input.jsonl
+```
+
 ## Relations Check Interface
 We observe that the current HasProperty relation is too generic. Therefore, we seperate the HasProperty relation into HasValue when the object of a triple refers to a string literal. To run the interface, execute the following commands:
 ````
