@@ -77,7 +77,7 @@ def _create_options(stream):
             start_char = int(span["start"])
             end_char = int(span["end"])
             mention = task['text'][start_char:end_char]
-            if mention.lower() in ["my", "your","his", "her", "its", "our", "their", "i", "we"]:
+            if mention.lower() in ["my", "your","his", "her", "its", "our", "their", "i", "we", "he", "she", "it"]:
                 continue
             new_task = copy.deepcopy(task)
             if task['options2'][idx] != []:

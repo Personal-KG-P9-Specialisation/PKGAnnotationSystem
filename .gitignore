@@ -139,3 +139,6 @@ annotations_data/temp*
 personachat
 run.sh
 conceptnet_linking/prodigy_license.txt
+annotations_data/*.bak
+annotations_data/personal_entity_input_divide
+annotations_data/conceptnet_input_divide
