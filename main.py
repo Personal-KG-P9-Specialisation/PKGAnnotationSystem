@@ -5,7 +5,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--type', nargs='?', default='triples')
 args = parser.parse_args()
 
-
+#For running conceptnet entity linking interface
+#export concept_data=annotations_data/conceptnet_input_divide/person10.jsonl DATABASE=conceptnet_entities PRODIGY_PORT=9010 && python3 -m main --type CSKG_ents
 
 if __name__ == "__main__":
     if args.type == 'triples':
@@ -26,7 +27,7 @@ if __name__ == "__main__":
         instructions = 'conceptnet_linking/concept_instructions.html'
         datafile = os.getenv('concept_data')
         cmd = "python3 -m prodigy entity_linker.manual "+db+" "+datafile+" -F conceptnet_linking/entity_linking.py"
-        os.environ["PRODIGY_CONFIG_OVERRIDES"] = '{"instructions":"'+instructions+'"}'
+        os.environ["PRODIGY_CONFIG_OVERRIDES"] = '{"instructions":"'+instructions+'", "global_css": ".prodigy-button-reject { display: none } .prodigy-button-ignore { display: none }"}'
         os.system(cmd)
     elif args.type == 'personal_ent':
         db = os.getenv('DATABASE')

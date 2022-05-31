@@ -167,7 +167,7 @@ class CandidateGenerator:
         return list(set(nodes))
 
     #taken from our PKGAnalysis repository
-    def entity_candidates(self, em, n=5, cutoff = 0.1):
+    def entity_candidates(self, em, n=5, cutoff = 0.001):
         el_list = list()
         self.entities = [x.replace(' ','_') for x in self.entities if len(x.split(' '))>0]
         for e in self.entities:
@@ -443,6 +443,7 @@ if __name__=="__main__":
     parser.add_argument('--option' ,type=str)
     parser.add_argument('--input', help='Input data file')
     parser.add_argument('--output', help='Output path for file',nargs='?', const='./outfile.txt', default='./outfile.txt')
+    parser.add_argument('--CSKG', help='path to CSKG data',nargs='?')
     args = parser.parse_args()
     if args.option == 'personal_entity':
         path = args.input
@@ -451,6 +452,15 @@ if __name__=="__main__":
         of = open(o_path,'w')
         c.export_personal(of)
         of.close()
+    elif args.option == 'post_process_triples':
+        remove_duplicate_anno(args.input)
+        assign_ids_to_missing_convs(args.input+'.bak')
+        os.rename(args.input+'.bak.bak',f"{args.input}_updated")
+    elif args.option == 'conceptnet_entity':
+        c = TripleProcessor(args.input, convert_to_utt=False) #'/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl'
+        f = open(args.output,'w') #'/home/test/Github/PKGAnnotationSystem/annotations_data/conceptnet_entity_input.jsonl'
+        c.export_el_annotation_data(args.CSKG,f) #'/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv'
+        f.close()
     else:
         parser.print_help()
     #ready for next string
