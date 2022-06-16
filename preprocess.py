@@ -305,9 +305,6 @@ class TripleProcessor:
         for idx, x in enumerate(utterances):
             del x['span_text']
             x['turn'] = idx
-        """with open('entity_linking_sample2.jsonl','w') as f:
-            for x in utterances:
-                f.write(json.dumps(x)+'\n')"""
         if wrong_rel_map_count > 0:
             print(f"{conv['conv_id']}: Entity mentions are wrong {wrong_rel_map_count}", file=sys.stderr)
 
@@ -457,9 +454,9 @@ if __name__=="__main__":
         assign_ids_to_missing_convs(args.input+'.bak')
         os.rename(args.input+'.bak.bak',f"{args.input}_updated")
     elif args.option == 'conceptnet_entity':
-        c = TripleProcessor(args.input, convert_to_utt=False) #'/home/test/Github/PKGAnnotationSystem/annotations_data/filtered_annotated_triples.jsonl'
-        f = open(args.output,'w') #'/home/test/Github/PKGAnnotationSystem/annotations_data/conceptnet_entity_input.jsonl'
-        c.export_el_annotation_data(args.CSKG,f) #'/home/test/Github/PKGAnalysis/ConceptNet/conceptnet-assertions-5.7.0.csv'
+        c = TripleProcessor(args.input, convert_to_utt=False)
+        f = open(args.output,'w')
+        c.export_el_annotation_data(args.CSKG,f)
         f.close()
     else:
         parser.print_help()

@@ -1,10 +1,3 @@
-"""
-Custom Prodigy recipe to perform manual annotation of entity links
-Run the following command in the directory to start server. Requires sample2.jsonl with option2 field.
-python3 -m prodigy entity_linker.manual ents sample2.jsonl -F entity_linking.py
-"""
-
-
 import prodigy
 from prodigy.components.loaders import TXT, JSONL
 from prodigy.util import set_hashes
@@ -34,30 +27,6 @@ def entity_linker_manual(dataset, source):
         "view_id": "choice",
         "config": {"choice_auto_accept": False}
     }
-
-#Method from tutorial
-def _add_options(stream, kb, id_dict):
-    """ Define the options the annotator will be given, by consulting the candidates from the KB for each NER span. """
-    for task in stream:
-        text = task["text"]
-        for span in task["spans"]:
-            start_char = int(span["start"])
-            end_char = int(span["end"])
-            mention = text[start_char:end_char]
-
-            candidates = kb.get_candidates(mention)
-            if candidates:
-                options = [{"id": c.entity_, "html": _print_url(c.entity_, id_dict)} for c in candidates]
-
-                # we sort the options by ID
-                options = sorted(options, key=lambda r: int(r["id"][1:]))
-
-                # we add in a few additional options in case a correct ID can not be picked
-                options.append({"id": "NIL_otherLink", "text": "Link not in options"})
-                options.append({"id": "NIL_ambiguous", "text": "Need more context"})
-
-                task["options"] = options
-                yield task
 
 #convert to actual linkable stuff.
 def _transform_options(stream):

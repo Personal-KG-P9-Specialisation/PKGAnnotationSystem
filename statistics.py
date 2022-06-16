@@ -16,4 +16,3 @@ def load_rels(path):
             rels.append(rel['label'])
     f.close()
     return rels
-histogram('/home/test/Github/PKGAnnotationSystem/annotations_data/april1/april_trpl_no_dub.jsonl')

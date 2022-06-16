@@ -40,9 +40,6 @@ class AnnotationInterface(TripleProcessor):
                         change = snap_input_to_bool(input())
                         if change:
                             rel['label'] = 'HasValue'
-                        #new_rels.append(rel)
-                    #else:
-                        #new_rels.append(rel)
                 new_utterances.append(utt)
             file_pointer.write(json.dumps({"conv_id": conv['conv_id'], "utterances": new_utterances}) + '\n')
 
